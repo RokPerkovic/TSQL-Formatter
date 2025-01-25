@@ -2,7 +2,7 @@
 
 program Main;
 
-uses SysUtils, uSQLFormatter, uFile;
+uses SysUtils, uSQLFormatter, uFileReader;
 
 var
 	inputFile, outputFile: String;
