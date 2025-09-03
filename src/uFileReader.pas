@@ -41,6 +41,7 @@ destructor TFileReader.Destroy();
 begin
 	FFileStream.Free;
 	inherited Destroy;
+	//WriteLn('FileReader destroyed');
 end;
 
 procedure TFileReader.Init();

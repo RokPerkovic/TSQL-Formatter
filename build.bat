@@ -23,4 +23,6 @@ if %errorlevel% == 0 (
     echo Compilation failed.
 )
 
-pause
+:: pause
+:: cd C:\Users\Rok\Documents\GitHub\RokPerkovic\TSQL-Formatter
+:: C:\Users\Rok\Documents\GitHub\RokPerkovic\TSQL-Formatter\bin>SQLFormatter.exe ../data/input/test.sql

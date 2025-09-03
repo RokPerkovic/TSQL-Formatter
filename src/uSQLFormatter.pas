@@ -2,7 +2,7 @@
 unit uSQLFormatter;
 
 interface
-uses uFileReader;
+uses uLexan;
 
 type 
 	TSQLFormatter = class
@@ -27,14 +27,18 @@ end;
 
 procedure TSQLFormatter.SQLFormat();
 var
-	fr: TFileReader;
-	Line: AnsiString;
-	n, LineCount: Integer;
+	//fr: TFileReader;
+	Lexan: TLexan;
+	//Line: AnsiString;
+	//n, LineCount: Integer;
 begin
+	Lexan := TLexan.Create(FInputFile);
+	Lexan.NextToken();
+	Lexan.Free;
 	//WriteLn('Formatting ' + FInputFile);
 	
 	// Read file
-	fr := TFileReader.Create(FInputFile);
+	{fr := TFileReader.Create(FInputFile);
 	LineCount := 2000;
 	n := 0;
 
@@ -49,9 +53,9 @@ begin
       Write(Line); // Process the line
     end;
   finally
-		ReadLn();
+		//ReadLn();
     fr.Free;
-  end;
+  end;}
 
 end;
 
