@@ -2,7 +2,7 @@
 unit uSQLFormatter;
 
 interface
-uses uLexan;
+uses uLexan, uToken, sysUtils;
 
 type 
 	TSQLFormatter = class
@@ -31,10 +31,21 @@ var
 	Lexan: TLexan;
 	//Line: AnsiString;
 	//n, LineCount: Integer;
+	Token: TToken;
+	input: String;
 begin
-	Lexan := TLexan.Create(FInputFile);
-	Lexan.NextToken();
-	Lexan.Free;
+	input := 'select acKey from tHE_Move';
+	
+	Lexan := TLexan.Create({FInputFile} input);
+	Token := Lexan.NextToken();
+	Writeln(Token._toString);
+	
+	while Token.FType <> EOF do
+	begin
+		Token := Lexan.NextToken();
+		Writeln(Token._toString);
+	end;
+
 	//WriteLn('Formatting ' + FInputFile);
 	
 	// Read file
