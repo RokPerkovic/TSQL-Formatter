@@ -35,8 +35,8 @@ var
 	input: String;
 begin
 	input := 'select acKey from tHE_Move';
-	
-	Lexan := TLexan.Create({FInputFile} input);
+
+	//Lexan := TLexan.Create({FInputFile} input);
 	Token := Lexan.NextToken();
 	Writeln(Token._toString);
 	
@@ -45,7 +45,7 @@ begin
 		Token := Lexan.NextToken();
 		Writeln(Token._toString);
 	end;
-
+	
 	//WriteLn('Formatting ' + FInputFile);
 	
 	// Read file
