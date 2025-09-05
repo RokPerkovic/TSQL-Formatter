@@ -34,16 +34,27 @@ var
 	Token: TToken;
 	input: String;
 begin
-	input := 'select acKey from tHE_Move';
+	input := 'select abc from the_order where acKey';
 
-	//Lexan := TLexan.Create({FInputFile} input);
-	Token := Lexan.NextToken();
-	Writeln(Token._toString);
+	Lexan := TLexan.Create({FInputFile} input);
+	//Lexan.PrintChars(input);
 	
-	while Token.FType <> EOF do
-	begin
-		Token := Lexan.NextToken();
-		Writeln(Token._toString);
+	try
+		try
+			Token := Lexan.NextToken();
+			Writeln(Token._toString);
+			
+			while Token.FType <> EOF do
+			begin
+				Token := Lexan.NextToken();
+				Writeln(Token._toString);
+			end;
+		except on E:Exception do
+			Writeln(E.Message);
+		end;
+	finally
+		Writeln('Finished');
+		Lexan.free;
 	end;
 	
 	//WriteLn('Formatting ' + FInputFile);
