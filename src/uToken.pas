@@ -6,7 +6,7 @@ interface
 uses sysUtils, TypInfo;
 
 type
-	TTokenType = (keyword, identifier, literal, oper, symbol, comment, unknown, EOF);
+	TTokenType = (ttKeyword, ttIdentifier, ttQuotedIdentifier, ttLiteral, ttString, ttOper, ttSymbol, ttComment, ttUnknown, ttEOF);
 
 type
 	TToken = class
@@ -23,13 +23,14 @@ implementation
 
 constructor TToken.Create(TokenValue: String; TokenType: TTokenType);
 begin
-	FValue := TokenValue;
+	FValue := LowerCase(TokenValue);
 	FType := TokenType;
 end;
 
 function TToken._toString(): String;
 begin
-	Result := format('%s (%s)', [GetEnumName(TypeInfo(TTokenType), Ord(FType)), QuotedStr(FValue)]);
+	//Writeln('FType: ', FType, 'FValue: ', FValue);
+	Result := format('%s (%s)', [GetEnumName(TypeInfo(TTokenType), Ord(FType)), FValue]);
 end;
 
 end.
