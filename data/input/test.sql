@@ -1,2 +1,1 @@
-select from
-the_move
+select 1 + 1 'abc ' 'pr''ja[ne''''z'
