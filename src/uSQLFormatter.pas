@@ -2,7 +2,7 @@
 unit uSQLFormatter;
 
 interface
-uses uLexan, uToken, sysUtils;
+uses uLexan, uToken, sysUtils, uFileReader;
 
 type 
 	TSQLFormatter = class
@@ -27,14 +27,17 @@ end;
 
 procedure TSQLFormatter.SQLFormat();
 var
-	//fr: TFileReader;
+	fr: TFileReader;
 	Lexan: TLexan;
 	//Line: AnsiString;
 	//n, LineCount: Integer;
 	Token: TToken;
 	input: String;
 begin
-	input := 'select abc from the_order where acKey';
+	//input := 'select abc from the_order where acKey';
+	
+	fr := TFileReader.Create(FInputFile);
+	input := fr.LoadFile();
 
 	Lexan := TLexan.Create({FInputFile} input);
 	//Lexan.PrintChars(input);
@@ -44,7 +47,7 @@ begin
 			Token := Lexan.NextToken();
 			Writeln(Token._toString);
 			
-			while Token.FType <> EOF do
+			while Token.FType <> ttEOF do
 			begin
 				Token := Lexan.NextToken();
 				Writeln(Token._toString);
@@ -54,7 +57,8 @@ begin
 		end;
 	finally
 		Writeln('Finished');
-		Lexan.free;
+		Lexan.Free;
+		fr.Free;
 	end;
 	
 	//WriteLn('Formatting ' + FInputFile);
