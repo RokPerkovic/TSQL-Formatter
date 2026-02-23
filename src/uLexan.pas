@@ -8,13 +8,16 @@ const
 	Keywords: Array [0..11] of String = ('select', 'from', 'where', 'order', 'top', 'join', 'left join', 'right join', 'as', 'group', 'by', 'is');
 	
 const 
-	Symbols: Array [0..8] of Char = (',', '.', ';', '(', ')', '[', ']', '''', '"');
+	Symbols: Array [0..5] of Char = (',', '.', ';', '(', ')', '"');
 	
 const
 	SymbolNames: Array [0..8] of String = ('comma', 'dot', 'semicolon', 'left_paren', 'right_paren', 'left_square', 'right_square', 'single_quote', 'quote');
 	
 const
 	Operators: Array [0..13] of String = ('=', 'in', 'not', '+', '-', '*', '/', '<', '>', '<>', '>=', '<=', 'and', 'or');
+	
+const
+	OperatorNames: Array [0..13] of String = ('EQ', 'IN', 'NOT', 'ADD', 'SUB', 'MUL', 'DIV', 'LT', 'GT', 'NOT_EQ', 'GTE', 'LTE', 'AND', 'OR');
 	
 const
 	Whitespace: Array [0..4] of Char = (' ', #9, #10, #13, #0);
@@ -29,16 +32,16 @@ type
 			FKeyWords: Array [0..11] of String;
 			function MakeToken(): TToken;
 			function IsKeyword(Lexem: String): Boolean;
-			//function IsSymbol(c: Char): Boolean;
-			//function IsOperator(Lexem: String): Boolean;
+			function IsSymbol(c: Char): Boolean;
+			function IsOperator(c: Char): Boolean;
 			function IsWhitespace(c: Char): Boolean;
-			function MakeQuotedIdentifier(): TToken;
 			function MakeString(): TToken;
 			function MakeNumber(): TToken;
 			function MakeComment(): TToken;
 			function MakeMultiLineComment(): TToken;
 			function MakeIdentifier(): TToken;
-			function MakeOperator(): TToken;
+			function MakeQuotedIdentifier(): TToken;
+			function MakeOperator(op: String): TToken;
 			function Peek(): Char;
 			
 			//procedure printChars(s: String);
@@ -88,12 +91,17 @@ begin
 	for k := Low(Keywords) to High(Keywords) do
 	begin
 		//Writeln(Keywords[k]);
-		if Keywords[k] = Lexem then
+		if Keywords[k] = LowerCase(Lexem) then
 		begin
 			Result := True;
 			Exit;
 		end;
 	end;
+end;
+
+function TLexan.IsSymbol(c: Char): Boolean;
+begin
+	Result := False;
 end;
 
 function TLexan.IsWhitespace(c: Char): Boolean;
@@ -111,6 +119,22 @@ begin
 	end;
 end;
 
+function TLexan.IsOperator(c: Char): Boolean;
+var
+	o: Integer;
+begin
+	Result := False;
+	for o := Low(Operators) to High(Operators) do
+	begin
+		if Operators[o] = c then
+		begin
+			Result := True;
+			Exit;
+		end;
+	end;
+
+end;
+
 function TLexan.Peek(): Char;
 begin
 
@@ -125,27 +149,62 @@ begin
 	end;
 end;
 
-function TLexan.MakeQuotedIdentifier(): TToken;
-begin
-
-end;
-
 function TLexan.MakeString(): TToken;
+var
+	Lexem: String;
+	c: Char;
 begin
+	Lexem := '';
+	// preberes '; se postavis na naslednji znak; preveris ali je konec vhoda; 
+	while FInputPos <= FInputLen do
+	begin
+		if FInput[FInputPos] = '''' then
+		begin
+			if Peek() <> '''' then // escaped ' 'abc''def'
+			begin
+				Inc(FInputPos);
+				break;
+			end;
+			Lexem := Lexem + '''';
+			Inc(FInputPos); // ce je narekovaj in je escaped (naslednji je spet narekovaj), potem preskoci narekovaj
+		end;
+		c := FInput[FInputPos];
+		Lexem := Lexem + c;
+		Inc(FInputPos);
+	end;
 
+	Result := TToken.Create(Lexem, ttString);
 end;
 
 function TLexan.MakeNumber(): TToken;
+var
+	Lexem: String;
+	c: Char;
 begin
-
+	Lexem := '';
+	c := FInput[FInputPos];
+	//Inc(FInputPos);
+	while (FInput[FInputPos] >= '0') and (FInput[FInputPos] <= '9') do//(c >= '0') and (c <= '9') do // input = '12 +'
+	begin
+		Lexem := Lexem + c;
+		//WriteLn(FInput[FInputPos]);
+		Inc(FInputPos);
+		if (FInput[FInputPos] >= '0') and (FInput[FInputPos] <= '9') then
+			c := FInput[FInputPos]; // kaj pa ce naslednji znak ni vec stevilo? '1 ' 
+		//Inc(FInputPos);
+	end;
+	
+	//Writeln('FInputPos: ', FInputPos);
+	//Inc(FInputPos);
+	
+	Result := TToken.Create(Lexem, ttLiteral);
 end;
 
-// build single-line comment (-- comment)
+// build single-line ttComment (-- ttComment)
 function TLexan.MakeComment(): TToken;
 var
 	Lexem: String;
 	c: Char;
-	Token: TToken;
 begin
 	Lexem := '--';
 	c := FInput[FInputPos];
@@ -153,14 +212,15 @@ begin
 	while (c <> #10) and (c <> #0) do
 	begin
 		Lexem := Lexem + c;
-		Inc(FInputPos, 2);
+		Inc(FInputPos, 1);
 		c := FInput[FInputPos];
 	end;
 	
-	Result := TToken.Create(Lexem, comment);
+	//printChars(Lexem); // CRLF messes up the TToken._toString() ?
+	Result := TToken.Create(Lexem, ttComment);
 end;
 
-// build multi-line comment 
+// build multi-line ttComment 
 {
 /* 
 	line
@@ -207,15 +267,16 @@ begin
   end;
 
   if Counter <> 0 then
-    raise Exception.Create('Missing end comment mark ''*/''');
+    raise Exception.Create('Missing end ttComment mark ''*/''');
 
-  Result := TToken.Create(Lexem, comment);
+  Result := TToken.Create(Lexem, ttComment);
 end;
 
 
-function TLexan.MakeOperator(): TToken;
+function TLexan.MakeOperator(op: String): TToken;
 begin
-
+	Inc(FInputPos);
+	Result := TToken.Create(op, ttOper);
 end;
 
 function TLexan.MakeIdentifier(): TToken;
@@ -227,7 +288,36 @@ begin
 	Lexem := '';
 	c := FInput[FInputPos];
 	
-	while not IsWhitespace(c){((c >= 'a') and (c <= 'z')) or ((c >= 'A') and (c <= 'Z'))} do
+	while not IsWhitespace(c) do
+	begin
+		Lexem := Lexem + c;
+		Inc(FInputPos);
+		c := FInput[FInputPos];
+	end;
+	
+	Inc(FInputPos);
+	
+	if IsKeyword(Lexem) then
+	begin
+		Token := TToken.Create(Lexem, ttKeyword);
+		Result := Token;
+	end else
+	begin
+		Token := TToken.Create(Lexem, ttIdentifier);
+		Result := Token;
+	end;
+end;
+
+function TLexan.MakeQuotedIdentifier(): TToken;
+var
+	Lexem: String;
+	c: Char;
+	Token: TToken;
+begin
+	Lexem := '';
+	c := FInput[FInputPos];
+	
+	while not IsWhitespace(c) do
 	begin
 		Lexem := Lexem + c;
 		Inc(FInputPos);
@@ -236,15 +326,13 @@ begin
 	
 	if IsKeyword(Lexem) then
 	begin
-		Token := TToken.Create(Lexem, keyword);
+		Token := TToken.Create(Lexem, ttKeyword);
 		Result := Token;
 	end else
 	begin
-		Token := TToken.Create(Lexem, identifier);
+		Token := TToken.Create(Lexem, ttQuotedIdentifier);
 		Result := Token;
 	end;
-	
-
 end;
 
 function TLexan.NextToken(): TToken;
@@ -252,9 +340,6 @@ begin
 	Result := MakeToken();
 end;
 
-
-// najprej sestavis lexem (torej sestavljas do prvega whitespace-a) in potem z vsemi funkcijami preveris, kam spada
-// glede na prvi prebran znak se odlocis, kaj bi lahko bil lexem, ki ga beres? npr. ce je prvi znak stevilka, gres v makeNumber
 function TLexan.MakeToken(): TToken;
 var
 	i: Integer;
@@ -264,8 +349,16 @@ begin
 	
 	for i := FInputPos to FInputLen do
 	begin
-		if ((FInput[i] >= 'a') and (FInput[i] <= 'z')) or ((FInput[i] >= 'A') and (FInput[i] <= 'Z')) then
+		if ((FInput[i] >= 'a') and (FInput[i] <= 'z')) or ((FInput[i] >= 'A') and (FInput[i] <= 'Z')) 
+				or (FInput[i] = '[')
+				or (FInput[i] = '"')
+				or (FInput[i] = '@') then
 		begin
+			if ((FInput[i] = '[') or (FInput[i] = '"')) then
+			begin
+				Result := MakeQuotedIdentifier(); // a je to naloga tokenizerja ali parserja? Ali bi moral tokenizer vrnit left_square, ttIdentifier ali quoted ttIdentifier?
+				Exit;
+			end;
 			Result := MakeIdentifier();
 			Exit;
 		end else if FInput[i] = '/' then
@@ -278,7 +371,7 @@ begin
 				Exit;
 			end else
 			begin
-				Result := MakeOperator();
+				Result := MakeOperator('/');
 				Exit;
 			end;
 		end else if FInput[i] = '-' then
@@ -291,61 +384,46 @@ begin
 				Exit;
 			end else
 			begin
-				Result := MakeOperator();
+				Result := MakeOperator('-');
 				Exit;
 			end;
+		end else if IsOperator(FInput[i]) then //?
+		begin
+			NextChar := Peek();
+			if IsOperator(NextChar) then
+			begin
+				Result := MakeOperator(FInput[i] + NextChar); // npr. 1+++1 je v MsSql veljaven expr...
+				Exit;
+			end else
+			begin
+				Result := MakeOperator(FInput[i]);
+				//Inc(FInputPos);
+				Exit;
+			end;
+		end else if (FInput[i] >= '0') and (FInput[i] <= '9') then
+		begin
+			Result := MakeNumber(); // tukaj gre delat številko
+			//WriteLn('Input pos after MakeNumber', FInputPos);
+			Exit;
+		end else if (FInput[i] = '''') then
+		begin
+			//WriteLn('Make string');
+			Inc(FInputPos);
+			Result := MakeString();
+			Exit;
 		end else
 		begin
 			if not IsWhitespace(FInput[i]) then
 			begin
-				Raise Exception.Create(format('Unknown symbol encountered: %s', [FInput[i]]));
-			end;
-		end;
-		{
-		if (FInput[i] = '/') or (FInput[i] = '-') then
-		begin
-			// check next character to see if it is a comment (*, -)
-			// --, /* */
-			//Writeln('komentar');
-			NextChar := Peek();
-			if (NextChar = '*') or (NextChar = '-') then
+				Raise Exception.Create(format('ttUnknown ttSymbol encountered: %s', [FInput[i]]));
+			end else
 			begin
-				Writeln('komentar');
-				FInputPos := FInputPos + 2;
-				MakeComment();
+				Inc(FInputPos); // prekoci whitespace?
 			end;
 		end;
-		
-		// quoted identifiers: "first name", [first name]
-		if (FInput[i] = '"') or (FInput[i] = '[') then
-		begin
-			Result := MakeQuotedIdentifier();
-			exit;
-		end;
-		
-		if FInput[i] = '''' then
-		begin
-			Result := MakeString();
-			exit;
-		end;
-		
-		if (FInput[i] >= '0') and (FInput[i] <= '9') then
-		begin
-			Result := MakeNumber();
-			exit;
-		end;
-		}
-		//Lexem := Lexem + FInput[i];
-		Inc(FInputPos);
-		{if FInputPos > FInputLen then
-		begin
-			Token := TToken.Create(Lexem, EOF);
-			Result := Token;
-			Exit;
-		end;}
 	end;
 	
-	Token := TToken.Create('', EOF);
+	Token := TToken.Create('', ttEOF);
 	Result := Token;
 end;
 
